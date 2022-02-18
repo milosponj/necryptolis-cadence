@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [master]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+      # Check-out repository under $GITHUB_WORKSPACE
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Install Flow CLI
+        run: sh -ci "$(curl -fsSL https://storage.googleapis.com/flow-cli/install.sh)"
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+        working-directory: tests
+
+      - name: Update PATH
+        run: echo "/root/.local/bin" >> $GITHUB_PATH
+
+      - name: run tests
+        run: npm run test:github
+        working-directory: tests
