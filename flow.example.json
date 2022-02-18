@@ -1,0 +1,13 @@
+{
+  "accounts": {
+    "testnet-account": {
+      "address": "0xAddress",
+      "keys": "private_key"
+    }
+  },
+  "deployments": {
+    "testnet": {
+      "testnet-account": ["Necryptolis"]
+    }
+  }
+}

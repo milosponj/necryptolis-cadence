@@ -1,0 +1,46 @@
+import { executeScript, mintFlow, sendTransaction } from "flow-js-testing";
+import {
+  getNecryptolisAdminAddress,
+  deployContractByNameWithErrorRaised,
+  sendTransactionWithErrorRaised,
+  executeScriptWithErrorRaised,
+} from "./common";
+
+export const deployKittyItems = async (address) => {
+  await mintFlow(address, "10.0");
+  const admin = await getNecryptolisAdminAddress();
+
+  const addressMap = { NonFungibleToken: admin };
+  return deployContractByNameWithErrorRaised({
+    to: address,
+    name: "KittyItems",
+    addressMap,
+  });
+};
+
+export const setupKittyItemsOnAccount = async (account) => {
+  const name = "kittyItems/setup_account";
+  const signers = [account];
+
+  return sendTransactionWithErrorRaised({ name, signers });
+};
+
+/*
+ * Mints KittyItem of a specific **itemType** and sends it to **recipient**.
+ * @param {UInt64} itemType - type of NFT to mint
+ * @param {string} recipient - recipient account address
+ * @throws Will throw an error if execution will be halted
+ * @returns {Promise<*>}
+ * */
+export const mintKittyItem = async (
+  kittyAdmin,
+  recipient,
+  itemType,
+  itemRarity
+) => {
+  const name = "kittyItems/mint_kitty_item";
+  const args = [recipient, itemType, itemRarity];
+  const signers = [kittyAdmin];
+
+  return sendTransactionWithErrorRaised({ name, args, signers });
+};
