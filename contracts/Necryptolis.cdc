@@ -1,15 +1,22 @@
 import FungibleToken from "./FungibleToken.cdc"
 import NonFungibleToken from "./NonFungibleToken.cdc"
+import MetadataViews from "./MetadataViews.cdc"
 
 pub contract Necryptolis: NonFungibleToken {
 
     pub event ContractInitialized()
     
     pub event Withdraw(id: UInt64, from: Address?)
+    
+    // Emitted when a necryptolis nft is deposited in a collection
     pub event Deposit(id: UInt64, to: Address?)
+    
+    // Emitted when a necryptolis nft is deposited in a collection with slightly more data
     pub event DepositNecryptolisNFT(id: UInt64, to: Address?, left: Int32, top: Int32)
     pub event CemeteryPlotMinted(id: UInt64, plotData: PlotData)
     pub event Minted(id: UInt64, typeID: UInt64)
+
+    // Emitted whenever plotSalesInfo has changed (Price changes, min/max plot dimensions changes)
     pub event PlotSalesInfoChanged(
         squarePixelPrice: UFix64, 
         candlePrice: UFix64, 
@@ -20,13 +27,22 @@ pub contract Necryptolis: NonFungibleToken {
         minPlotWidth: UInt16, 
         vaultAddress: Address,
         vaultType: Type)
+
+    // Emitted when a Plot receives it's Gravestone
     pub event GravestoneCreated(id: UInt64, name: String, fromDate: String, toDate: String, metadata: {String:String}, left: Int32, top: Int32)
+    // Emitted when ToDate has been added to an already existing date
     pub event ToDateSet(id: UInt64, toDate: String, left: Int32, top: Int32)
+    // Emitted when someone buys a candle for an NFT
     pub event CandleLit(id: UInt64, left: Int32, top: Int32, buyerAddress: Address)
+    // Emitted whenever plot is trimmed
     pub event CemeteryPlotTrimmed(id: UInt64, left: Int32, top: Int32)
+    // Emitted when someone buries another NFT inside Necryptolis NFT
     pub event NFTBuried(id: UInt64, left: Int32, top: Int32, nftID: UInt64, nftType: Type)
     
     pub var totalSupply: UInt64
+
+    // Url used for metadata of NFT thumbnail property
+    pub var imagesBaseURL: String
 
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
@@ -34,20 +50,23 @@ pub contract Necryptolis: NonFungibleToken {
     pub let PlotMinterStoragePath: StoragePath
     pub let GravestoneManagerStoragePath: StoragePath
 
-    pub var plotDatas: {UInt64: PlotData}    
-    pub var plotSalesInfo : PlotSalesInfo
+    // information about all the plots in Necryptolis (their position and dimension)
+    pub let plotDatas: {UInt64: PlotData}    
 
+    pub let plotSalesInfo : PlotSalesInfo
+    
+    // Holds all the restrictions and prices for creating Necryptolis NFTs
     pub struct PlotSalesInfo {
-            pub var squarePixelPrice: UFix64
-            pub var candlePrice: UFix64
-            pub var trimPrice: UFix64
-            pub var maxPlotHeight: UInt16
-            pub var maxPlotWidth: UInt16
-            pub var minPlotHeight: UInt16
-            pub var minPlotWidth: UInt16
+            pub(set) var squarePixelPrice: UFix64
+            pub(set) var candlePrice: UFix64
+            pub(set) var trimPrice: UFix64
+            pub(set) var maxPlotHeight: UInt16
+            pub(set) var maxPlotWidth: UInt16
+            pub(set) var minPlotHeight: UInt16
+            pub(set) var minPlotWidth: UInt16
 
             // When someone buys a service (candles/trimming), this vault gets the tokens
-            access(account) var servicesProviderVault: Capability<&AnyResource{FungibleToken.Receiver}>?
+            pub(set) var servicesProviderVault: Capability<&AnyResource{FungibleToken.Receiver}>?
 
             init(squarePixelPrice: UFix64, candlePrice: UFix64, trimPrice: UFix64, maxPlotHeight: UInt16, maxPlotWidth: UInt16, minPlotHeight: UInt16, minPlotWidth: UInt16, vault: Capability<&AnyResource{FungibleToken.Receiver}>?){
                 self.squarePixelPrice = squarePixelPrice
@@ -61,22 +80,8 @@ pub contract Necryptolis: NonFungibleToken {
             }
     }
 
-    pub fun isPlotColliding(left: Int32, top: Int32, width: UInt16, height: UInt16) : Bool {
-        for key in Necryptolis.plotDatas.keys {
-            let plotData = Necryptolis.plotDatas[key]!
-            if (
-                plotData.left <= left + Int32(width) &&
-                plotData.left + Int32(plotData.width) > left + 1 &&
-                plotData.top < top + Int32(height) &&
-                plotData.top + Int32(plotData.height) > top + 1
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
+    // further away the cemetery plot is created the price drops
+    // this helper method returns the factor by which the price needs to be reduced
     pub fun getPlotDistanceFactor(left: Int32, top: Int32) : UFix64 {
         var valueA = left
         var valueB = top
@@ -95,10 +100,12 @@ pub contract Necryptolis: NonFungibleToken {
         return 1.0 / UFix64(biggerValue / 1000 + 1)
     }
 
+    // returns the price of the plot
     pub fun getPlotPrice(width: UInt16, height: UInt16, left: Int32, top: Int32): UFix64 {
         return Necryptolis.plotSalesInfo.squarePixelPrice * UFix64(height) * UFix64(width) * UFix64(Necryptolis.getPlotDistanceFactor(left: left, top: top))
     }
 
+    // A struct that holds basic information about the plot
     pub struct PlotData {
             pub let id: UInt64
 
@@ -114,9 +121,9 @@ pub contract Necryptolis: NonFungibleToken {
                 self.width = width
                 self.height = height
             }
-
     }
 
+    // A struct that holds information about candle purchases
     pub struct CandleBuy {
         pub let buyerAddress: Address
         pub let timestamp: UFix64
@@ -127,6 +134,7 @@ pub contract Necryptolis: NonFungibleToken {
         }
     }
 
+    // A struct that holds data about grave which is inserted into a cemetery plot
     pub struct GraveData {
         pub let name: String        
         pub let fromDate: String        
@@ -146,7 +154,7 @@ pub contract Necryptolis: NonFungibleToken {
     // NFT
     // A CemeteryPlot NFT resource
     //
-    pub resource NFT: NonFungibleToken.INFT {
+    pub resource NFT: NonFungibleToken.INFT, MetadataViews.Resolver {
         // The token's ID
         pub let id: UInt64
 
@@ -161,8 +169,7 @@ pub contract Necryptolis: NonFungibleToken {
 
         // initializer
         init() {
-            Necryptolis.totalSupply = Necryptolis.totalSupply + (1 as UInt64)         
-            
+            Necryptolis.totalSupply = Necryptolis.totalSupply + (1 as UInt64)
             self.id = Necryptolis.totalSupply
             self.plotData = Necryptolis.plotDatas[self.id]!
             self.graveData = GraveData(name: "", fromDate: "", toDate: "", metadata: {})
@@ -175,6 +182,14 @@ pub contract Necryptolis: NonFungibleToken {
             emit CemeteryPlotMinted(id: self.id, plotData: self.plotData)
         }
 
+
+        // addGravestone adds a gravestone to the cemetery plot
+        //
+        // Parameters: 
+        // name: Title displayed on the grave
+        // fromDate: Starting date displayed on the grave
+        // toDate: Ending date displayed on the grave
+        // metadata: Additional details like grave shape, color, font etc.
         pub fun addGravestone(name: String, fromDate: String, toDate: String, metadata: {String:String}) {
             pre {
                 self.isGraveSet == false : "Grave must be empty."
@@ -189,6 +204,10 @@ pub contract Necryptolis: NonFungibleToken {
             emit GravestoneCreated(id: self.id, name: name, fromDate: fromDate, toDate: toDate, metadata: metadata, left: self.plotData.left, top: self.plotData.top)
         }   
 
+        // setToDate sets the ending date on the grave
+        //
+        // Parameters: 
+        // toDate: Ending date displayed on the grave
         pub fun setToDate(toDate: String) {
             pre {
                 self.isGraveSet == true : "Grave must be set"
@@ -201,7 +220,11 @@ pub contract Necryptolis: NonFungibleToken {
             emit ToDateSet(id: self.id, toDate: toDate, left: self.plotData.left, top: self.plotData.top)
         }
         
-
+        // lightCandle adds a candle to candles list of the NFT
+        //
+        // Parameters: 
+        // buyerPayment: payment vault of the buyer
+        // buyerAddress: the address of user buying the candle
         pub fun lightCandle(buyerPayment: @FungibleToken.Vault, buyerAddress: Address){
             pre {
                 buyerPayment.balance == Necryptolis.plotSalesInfo.candlePrice : "Payment does not equal price of the candle."
@@ -214,6 +237,10 @@ pub contract Necryptolis: NonFungibleToken {
             emit CandleLit(id: self.id, left: self.plotData.left, top: self.plotData.top, buyerAddress: buyerAddress) 
         }  
 
+        // trim resets the last trimmed timestamp to current timestamp
+        //
+        // Parameters: 
+        // buyerPayment: payment vault of the buyer
         pub fun trim(buyerPayment: @FungibleToken.Vault){
             pre {
                 buyerPayment.balance == Necryptolis.plotSalesInfo.trimPrice : "Payment does not equal price of the candle."
@@ -226,6 +253,10 @@ pub contract Necryptolis: NonFungibleToken {
             emit CemeteryPlotTrimmed(id: self.id, left: self.plotData.left, top: self.plotData.top) 
         }   
 
+        // bury buries a different NFT inside this NFT
+        //
+        // Parameters: 
+        // buyerPayment: payment vault of the buyer
         pub fun bury(nft: @AnyResource{NonFungibleToken.INFT}, nftType: Type){
             pre {
                 self.buriedNFT == nil : "NFT already buried here."
@@ -239,12 +270,75 @@ pub contract Necryptolis: NonFungibleToken {
         destroy() {
             destroy self.buriedNFT
         } 
+
+        pub fun getViews(): [Type] {
+            return [
+                Type<MetadataViews.Display>(), Type<String>()
+            ]
+        }
+
+        // returns the name of NFT
+        pub fun name(): String {
+            if(self.isGraveSet) {
+                return "Id: ".concat(self.id.toString())
+                        .concat(" - ").concat(self.graveData.name)
+
+            } else {
+                return "Id: ".concat(self.id.toString())
+                .concat(" Plot : (").concat(self.plotData.left.toString()).concat(",").concat(self.plotData.top.toString()).concat(")")
+                .concat(" - ").concat(self.plotData.width.toString()).concat("x").concat(self.plotData.height.toString())            }
+        }
+
+        // returns additional details about NFT
+        pub fun description(): String {
+            if(self.isGraveSet) {
+                return "Id: ".concat(self.id.toString())
+                        .concat(" Title: ").concat(self.graveData.name)
+                        .concat(" From: ").concat(self.graveData.fromDate)
+                        .concat(" To: ").concat(self.graveData.toDate)
+            } else {
+                return "Id: ".concat(self.id.toString())
+                .concat(" Position: (").concat(self.plotData.left.toString()).concat(",").concat(self.plotData.top.toString()).concat(")")
+                .concat(" Dimensions: ").concat(self.plotData.width.toString()).concat("x").concat(self.plotData.height.toString())            }
+        }
+
+        // imageURL returns the public URL of a picture of this NFT
+        pub fun imageURL(): String {
+            return Necryptolis.imagesBaseURL.concat(self.id.toString()).concat(".png")
+        }
+
+        pub fun resolveView(_ view: Type): AnyStruct? {
+            switch view {
+                case Type<MetadataViews.Display>():
+                    return MetadataViews.Display(
+                        name: self.name(),
+                        description: self.description(),
+                        thumbnail: MetadataViews.HTTPFile(
+                            url: self.imageURL()
+                            )
+                    )
+                case Type<String>():
+                    return self.name()
+            }
+
+            return nil
+        }
     }
 
+
+    // A resource that a user who wishes to mint NecryptolisNFTs holds
     pub resource PlotMinter {
+        
+        // mintCemeteryPlot mints a Necryptolis cemetery plot NFT
+        //
+        // Parameters: 
+        // left: distance from the center to the left
+        // top: distance from the center to the top
+        // width: The width of the plot
+        // height: The height of the plot
+        // buyerPayment: payment vault of the buyer
         pub fun mintCemeteryPlot(left: Int32, top: Int32, width: UInt16, height: UInt16, buyerPayment: @FungibleToken.Vault): @NFT {   
-            pre {   
-                !Necryptolis.isPlotColliding(left: left, top: top, width: width, height: height) : "New plot is colliding with the old."
+            pre {
                 buyerPayment.balance == Necryptolis.getPlotPrice(width: width, height: height, left: left, top: top) : "Payment does not equal the price of the plot."
                 width <= Necryptolis.plotSalesInfo.maxPlotWidth : "Plot too wide."
                 width >= Necryptolis.plotSalesInfo.minPlotWidth : "Plot not wide enough."
@@ -264,19 +358,47 @@ pub contract Necryptolis: NonFungibleToken {
         }
     }
 
+    // Admin resource which only the admin holds 
+    // and is able to change plotSalesInfo, mint NFTs, 
+    // change base images url and create new admins
     pub resource Admin {
+
+        // changePlotSalesInfo values inside the plotSalesInfo property of the contract
+        //
+        // Parameters: 
+        // squarePixelPrice: price per pixel of a cemetery plot
+        // candlePrice: price of a candle being added to a plot
+        // trimPrice: price of trimming the plot
+        // maxPlotHeight: The maximum allowed height of the plot
+        // maxPlotWidth: The maximum allowed width of the plot
+        // minPlotHeight: The minimum allowed height of the plot
+        // minPlotWidth: The minimum allowed height of the plot
+        // vault: the vault which will receive all the tokens
+        //
+        // Restrictions:
+        // prices and minimum values must be positive numbers
+        // maximum values must be greater than minimum values
         pub fun changePlotSalesInfo(squarePixelPrice: UFix64, candlePrice: UFix64, trimPrice: UFix64, maxPlotHeight: UInt16, maxPlotWidth: UInt16, minPlotHeight: UInt16, minPlotWidth: UInt16, vault: Capability<&{FungibleToken.Receiver}>){
             pre {
                 squarePixelPrice > 0.0 : "Square pixel price must be greater than 0."
                 candlePrice > 0.0 : "Candle price must be greater than 0."
-                trimPrice > 0.0 : "Trimming price must be greater than 0."
-                maxPlotHeight > 0 : "Max Height must be greater than 0."
-                maxPlotWidth > 0 : "Max Width must be greater than 0."
+                trimPrice > 0.0 : "Trimming price must be greater than 0."                
                 minPlotHeight > 0 : "Min height must be greater than 0."
                 minPlotWidth > 0 : "Min Width must be greater than 0."
+                maxPlotHeight > minPlotHeight : "Max Height must be greater than minPlotHeight."
+                maxPlotWidth > minPlotWidth : "Max Width must be greater than minPlotWidth."
             }
 
-            Necryptolis.plotSalesInfo = Necryptolis.PlotSalesInfo(
+            Necryptolis.plotSalesInfo.squarePixelPrice = squarePixelPrice
+            Necryptolis.plotSalesInfo.candlePrice = candlePrice
+            Necryptolis.plotSalesInfo.trimPrice = trimPrice
+            Necryptolis.plotSalesInfo.maxPlotHeight = maxPlotHeight
+            Necryptolis.plotSalesInfo.maxPlotWidth = maxPlotWidth
+            Necryptolis.plotSalesInfo.minPlotHeight = minPlotHeight
+            Necryptolis.plotSalesInfo.minPlotWidth = minPlotWidth
+            Necryptolis.plotSalesInfo.servicesProviderVault = vault
+            
+            Necryptolis.PlotSalesInfo(
                 squarePixelPrice: squarePixelPrice, 
                 candlePrice: candlePrice, 
                 trimPrice: trimPrice, 
@@ -290,11 +412,15 @@ pub contract Necryptolis: NonFungibleToken {
             emit PlotSalesInfoChanged(squarePixelPrice: squarePixelPrice, candlePrice: candlePrice, trimPrice: trimPrice, maxPlotHeight: maxPlotHeight, maxPlotWidth: maxPlotWidth, minPlotHeight: minPlotHeight, minPlotWidth: minPlotWidth, vaultAddress: vault.address, vaultType: vault.getType())       
         }
 
-        pub fun mintCemeteryPlot(left: Int32, top: Int32, width: UInt16, height: UInt16): @NFT {   
-            pre {   
-                !Necryptolis.isPlotColliding(left: left, top: top, width: width, height: height) : "New plot is colliding with the old."
-            }       
-                
+
+        // mintCemeteryPlot mints a Necryptolis cemetery plot NFT
+        //
+        // Parameters: 
+        // left: distance from the center to the left
+        // top: distance from the center to the top
+        // width: The width of the plot
+        // height: The height of the plot
+        pub fun mintCemeteryPlot(left: Int32, top: Int32, width: UInt16, height: UInt16): @NFT {           
             var newPlotData = PlotData(left: left, top: top, width: width, height: height)            
             Necryptolis.plotDatas[newPlotData.id] = newPlotData
             
@@ -302,6 +428,14 @@ pub contract Necryptolis: NonFungibleToken {
             let newCemeteryPlot: @NFT <- create NFT()
 
             return <- newCemeteryPlot
+        }
+
+        // changeImagesBaseUrl mints a Necryptolis cemetery plot NFT
+        //
+        // Parameters: 
+        // baseUrl: the url which will be used to append the id and extension of NFT image (${imagesBaseURL}/1.png    
+        pub fun changeImagesBaseUrl(baseUrl: String) {
+            Necryptolis.imagesBaseURL = baseUrl
         }
 
         pub fun createNewAdmin(): @Admin {
@@ -317,6 +451,9 @@ pub contract Necryptolis: NonFungibleToken {
         return <- create GravestoneManager()
     }
 
+    // The standard public collection interface
+    // to allow users to deposit/borrow Necryptolis NFTs
+    // but also to light a candle and trim them
     pub resource interface NecryptolisCollectionPublic {        
         pub fun deposit(token: @NonFungibleToken.NFT)
         pub fun getIDs(): [UInt64]        
@@ -331,9 +468,14 @@ pub contract Necryptolis: NonFungibleToken {
         pub fun trimCemeteryPlot(cemeteryPlotId: UInt64, buyerPayment: @FungibleToken.Vault)
     }
 
-    pub resource Collection: NecryptolisCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
+    pub resource Collection: NecryptolisCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic, MetadataViews.ResolverCollection {
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
 
+
+        // withdraw removes an NFT from the Collection and moves it to the caller
+        //
+        // Parameters: withdrawID: The ID of the NFT 
+        // that is to be removed from the Collection
         pub fun withdraw(withdrawID: UInt64): @NonFungibleToken.NFT {
             let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
 
@@ -342,6 +484,10 @@ pub contract Necryptolis: NonFungibleToken {
             return <-token
         }
 
+        // deposit takes a Necryptolis NFT and adds it to the Collections dictionary
+        //
+        // Parameters: token: the NFT to be deposited in the collection
+        //
         pub fun deposit(token: @NonFungibleToken.NFT) {
             let token <- token as! @Necryptolis.NFT
 
@@ -357,6 +503,7 @@ pub contract Necryptolis: NonFungibleToken {
             destroy oldToken
         }
 
+        // gets Ids of all the nfts owned by this collection
         pub fun getIDs(): [UInt64] {
             return self.ownedNFTs.keys
         }
@@ -374,6 +521,19 @@ pub contract Necryptolis: NonFungibleToken {
             }
         }
 
+        pub fun borrowViewResolver(id: UInt64): &AnyResource{MetadataViews.Resolver} {
+            let nft = &self.ownedNFTs[id] as auth &NonFungibleToken.NFT
+            let necryptolisNft = nft as! &Necryptolis.NFT
+            return necryptolisNft as &AnyResource{MetadataViews.Resolver}
+        }
+
+
+        // lightCandle adds a candle to candles list of the NFT
+        //
+        // Parameters: 
+        // cemeteryPlotId: id of the NFT
+        // buyerPayment: payment vault of the buyer
+        // buyerAddress: the address of user buying the candle
         pub fun lightCandle(cemeteryPlotId: UInt64, buyerPayment: @FungibleToken.Vault, buyerAddress: Address) {
             pre {
                 self.ownedNFTs[cemeteryPlotId] != nil : "Cemetery plot not in the collection."
@@ -383,6 +543,13 @@ pub contract Necryptolis: NonFungibleToken {
             cemeteryPlot.lightCandle(buyerPayment: <- buyerPayment, buyerAddress: buyerAddress)
         }
 
+        
+        // trimCemeteryPlot trims the plot and resets lastTrimDate to current block timestamp
+        //
+        // Parameters: 
+        // cemeteryPlotId: id of the NFT
+        // buyerPayment: payment vault of the buyer
+        // buyerAddress: the address of user buying the candle
         pub fun trimCemeteryPlot(cemeteryPlotId: UInt64, buyerPayment: @FungibleToken.Vault) {
             pre {
                 self.ownedNFTs[cemeteryPlotId] != nil : "Cemetery plot not in the collection."
@@ -410,7 +577,6 @@ pub contract Necryptolis: NonFungibleToken {
 
     pub resource interface GravestoneCreator {        
         // Allows the Cemetery plot owner to create a gravestone
-        //
         pub fun createGravestone(
             necryptolisProviderCapability: Capability<&Necryptolis.Collection{NecryptolisCollectionPublic}>,            
             nftID: UInt64,
@@ -419,7 +585,7 @@ pub contract Necryptolis: NonFungibleToken {
     }
 
     pub resource interface BurialProvider {        
-        // Allows the Cemetery plot owner to bury an NF
+        // Allows the Cemetery plot owner to bury an NFT
         //
         pub fun buryNFT(
             necryptolisProviderCapability: Capability<&Necryptolis.Collection{NecryptolisCollectionPublic}>,
@@ -430,7 +596,15 @@ pub contract Necryptolis: NonFungibleToken {
         )
     }
 
+    // A resource which a user who wishes to add gravestones or 
+    // bury other NFTs into his Necryptolis NFT holds
+    // 
     pub resource GravestoneManager : GravestoneCreator, BurialProvider {
+        // createGravestone creates a gravestone on cemetery plot
+        // Parameters: 
+        // necryptolisProviderCapability: provider capability for the nfts
+        // nftID: id of the NFT for which the gravestone is being created
+        // graveData: the basic data and metadata of the grave
          pub fun createGravestone(
             necryptolisProviderCapability: Capability<&Necryptolis.Collection{NecryptolisCollectionPublic}>,
             nftID: UInt64,
@@ -445,6 +619,16 @@ pub contract Necryptolis: NonFungibleToken {
             nft.addGravestone(name: graveData.name, fromDate: graveData.fromDate, toDate: graveData.toDate, metadata: graveData.metadata)
         }
 
+        // buryNFT is used to bury a different NFT into a Necryptolis NFT plot
+        //
+        // Parameters: 
+        // necryptolisProviderCapability: provider capability for the necryptolis nfts
+        // plotID: id of the NFT in which the other NFT is being buried
+        // nftProviderCapability: provider capability for the nft which is being buried
+        // nftType: the type of the nft being buried
+        // nftId: the id of the nft being buried
+        //
+        // restrictions: nft mustn't be Necryptolis NFT
         pub fun buryNFT(
             necryptolisProviderCapability: Capability<&Necryptolis.Collection{NecryptolisCollectionPublic}>,
             plotID: UInt64,            
@@ -452,7 +636,9 @@ pub contract Necryptolis: NonFungibleToken {
             nftType: Type,
             nftID: UInt64
          ) {
-
+            pre {                
+                nftType != Necryptolis.NFT.getType()
+            }
             let provider = necryptolisProviderCapability.borrow()
             assert(provider != nil, message: "cannot borrow necryptolisProviderCapability")
             let plotNFT = provider!.borrowCemeteryPlot(id: plotID)!
@@ -475,7 +661,8 @@ pub contract Necryptolis: NonFungibleToken {
       self.totalSupply = 0
       self.plotDatas = {}   
       self.plotSalesInfo = PlotSalesInfo(squarePixelPrice: 0.001, candlePrice: 1.0, trimPrice: 1.0, maxPlotHeight: 400, maxPlotWidth: 400, minPlotHeight: 200, minPlotWidth: 200, vault: nil)
-      
+      self.imagesBaseURL = "https://necryptolis.azureedge.net/images/"
+
       //Initialize storage paths
       self.CollectionStoragePath = /storage/NecryptolisCollection
       self.CollectionPublicPath = /public/NecryptolisCollection
@@ -484,7 +671,7 @@ pub contract Necryptolis: NonFungibleToken {
       self.PlotMinterStoragePath = /storage/NecryptolisPlotMinter
 
       self.account.save(<- create Admin(), to: self.NecryptolisAdminStoragePath)
-
+    
       // Collection
       self.account.save<@Collection>(<- create Collection(), to: self.CollectionStoragePath)
       self.account.link<&{NecryptolisCollectionPublic}>(self.CollectionPublicPath, target: self.CollectionStoragePath)
