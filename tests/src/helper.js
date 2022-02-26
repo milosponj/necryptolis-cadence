@@ -1,17 +1,16 @@
-import { executeScript, mintFlow, sendTransaction } from "flow-js-testing";
 import {
-  getNecryptolisAdminAddress,
-  deployContractByNameWithErrorRaised,
-  sendTransactionWithErrorRaised,
-  executeScriptWithErrorRaised,
-} from "./common";
+  deployContractByName,
+  mintFlow,
+  sendTransaction,
+} from "flow-js-testing";
+import { getNecryptolisAdminAddress } from "./common";
 
 export const deployKittyItems = async (address) => {
   await mintFlow(address, "10.0");
   const admin = await getNecryptolisAdminAddress();
 
   const addressMap = { NonFungibleToken: admin };
-  return deployContractByNameWithErrorRaised({
+  return deployContractByName({
     to: address,
     name: "KittyItems",
     addressMap,
@@ -22,7 +21,7 @@ export const setupKittyItemsOnAccount = async (account) => {
   const name = "kittyItems/setup_account";
   const signers = [account];
 
-  return sendTransactionWithErrorRaised({ name, signers });
+  return sendTransaction({ name, signers });
 };
 
 /*
@@ -42,5 +41,5 @@ export const mintKittyItem = async (
   const args = [recipient, itemType, itemRarity];
   const signers = [kittyAdmin];
 
-  return sendTransactionWithErrorRaised({ name, args, signers });
+  return sendTransaction({ name, args, signers });
 };

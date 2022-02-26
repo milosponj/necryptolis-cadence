@@ -1,10 +1,10 @@
-import { executeScript, mintFlow, sendTransaction } from "flow-js-testing";
 import {
-  getNecryptolisAdminAddress,
-  deployContractByNameWithErrorRaised,
-  sendTransactionWithErrorRaised,
-  executeScriptWithErrorRaised,
-} from "./common";
+  executeScript,
+  mintFlow,
+  sendTransaction,
+  deployContractByName,
+} from "flow-js-testing";
+import { getNecryptolisAdminAddress } from "./common";
 
 /*
  * Deploys necessary contracts to NecryptolisAdmin.
@@ -15,22 +15,28 @@ export const deployNecryptolis = async () => {
   const necryptolisAdmin = await getNecryptolisAdminAddress();
   await mintFlow(necryptolisAdmin, "10.0");
 
-  await deployContractByNameWithErrorRaised({
+  await deployContractByName({
     to: necryptolisAdmin,
     name: "NonFungibleToken",
   });
 
-  await deployContractByNameWithErrorRaised({
+  await deployContractByName({
     to: necryptolisAdmin,
     name: "FUSD",
+  });
+
+  await deployContractByName({
+    to: necryptolisAdmin,
+    name: "MetadataViews",
   });
 
   const addressMap = {
     NonFungibleToken: necryptolisAdmin,
     FUSD: necryptolisAdmin,
+    MetadataViews: necryptolisAdmin,
   };
 
-  return deployContractByNameWithErrorRaised({
+  return deployContractByName({
     to: necryptolisAdmin,
     name: "Necryptolis",
     addressMap,
@@ -47,7 +53,7 @@ export const setupNecryptolisOnAccount = async (account) => {
   const name = "user/setup_account";
   const signers = [account];
 
-  await sendTransactionWithErrorRaised({ name, signers });
+  await sendTransaction({ name, signers });
   // we also do this method in order to populate the admin fusd vault receiver in plotSalesInfo
   return changePlotSalesInfo(0.01, 1, 1, 600, 600, 200, 200);
 };
@@ -56,7 +62,7 @@ export const setupPlotSalesInfo = async (account) => {
   const name = "admin/change_plot_sales_info";
   const signers = [account];
 
-  return sendTransactionWithErrorRaised({ name, signers });
+  return sendTransaction({ name, signers });
 };
 
 export const mintCemeteryPlot = async (
@@ -72,7 +78,7 @@ export const mintCemeteryPlot = async (
   const args = [left, top, width, height, recipientAddress];
   const signers = [necryptolisAdmin];
 
-  return sendTransactionWithErrorRaised({ name, args, signers });
+  return sendTransaction({ name, args, signers });
 };
 
 export const addGravestone = async (
@@ -88,7 +94,7 @@ export const addGravestone = async (
   const args = [plotId, graveTitle, fromDate, toDate, metadata];
   const signers = [necryptolisAdmin];
 
-  return sendTransactionWithErrorRaised({ name, args, signers });
+  return sendTransaction({ name, args, signers });
 };
 
 export const setToDate = async (plotId, toDate) => {
@@ -98,7 +104,7 @@ export const setToDate = async (plotId, toDate) => {
   const args = [plotId, toDate];
   const signers = [necryptolisAdmin];
 
-  return sendTransactionWithErrorRaised({ name, args, signers });
+  return sendTransaction({ name, args, signers });
 };
 
 export const lightCandle = async (user, plotOwnerAddress, plotId) => {
@@ -106,7 +112,7 @@ export const lightCandle = async (user, plotOwnerAddress, plotId) => {
   const args = [plotOwnerAddress, plotId];
   const signers = [user];
 
-  return sendTransactionWithErrorRaised({ name, args, signers });
+  return sendTransaction({ name, args, signers });
 };
 
 export const trimGrave = async (user, plotOwnerAddress, plotId) => {
@@ -114,7 +120,7 @@ export const trimGrave = async (user, plotOwnerAddress, plotId) => {
   const args = [plotOwnerAddress, plotId];
   const signers = [user];
 
-  return sendTransactionWithErrorRaised({ name, args, signers });
+  return sendTransaction({ name, args, signers });
 };
 
 export const buryKittyItem = async (user, plotId, kittyItemId) => {
@@ -123,7 +129,7 @@ export const buryKittyItem = async (user, plotId, kittyItemId) => {
   const args = [plotId, kittyItemId];
   const signers = [user];
 
-  return sendTransactionWithErrorRaised({ name, args, signers });
+  return sendTransaction({ name, args, signers });
 };
 
 export const changePlotSalesInfo = async (
@@ -150,7 +156,7 @@ export const changePlotSalesInfo = async (
   const necryptolisAdmin = await getNecryptolisAdminAddress();
   const signers = [necryptolisAdmin];
 
-  return sendTransactionWithErrorRaised({ name, args, signers });
+  return sendTransaction({ name, args, signers });
 };
 
 // SCRIPTS
@@ -158,13 +164,13 @@ export const changePlotSalesInfo = async (
 export const getCemeteryPlots = async () => {
   const name = "get_plot_datas";
 
-  return executeScriptWithErrorRaised({ name });
+  return executeScript({ name });
 };
 
 export const getPlotSalesInfo = async () => {
   const name = "get_plot_sales_info";
 
-  return executeScriptWithErrorRaised({ name });
+  return executeScript({ name });
 };
 
 export const getCandles = async (ownerAddress, plotId) => {
@@ -173,7 +179,7 @@ export const getCandles = async (ownerAddress, plotId) => {
   const args = [ownerAddress, plotId];
   const res = await executeScript({ name, args });
 
-  return executeScriptWithErrorRaised({ name, args });
+  return executeScript({ name, args });
 };
 
 export const getTrimmedOnTimestamp = async (ownerAddress, plotId) => {
@@ -182,5 +188,14 @@ export const getTrimmedOnTimestamp = async (ownerAddress, plotId) => {
   const args = [ownerAddress, plotId];
   const res = await executeScript({ name, args });
 
-  return executeScriptWithErrorRaised({ name, args });
+  return executeScript({ name, args });
+};
+
+export const getPlotMetadata = async (ownerAddress, plotId) => {
+  const name = "get_plot_metadata";
+
+  const args = [ownerAddress, plotId];
+  const res = await executeScript({ name, args });
+
+  return executeScript({ name, args });
 };

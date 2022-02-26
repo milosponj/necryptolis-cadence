@@ -18,15 +18,14 @@ import {
   setToDate,
   getCandles,
   setupNecryptolisOnAccount,
-  getTrimmedOnTimestamp,
   buryKittyItem,
   changePlotSalesInfo,
+  getPlotMetadata,
 } from "../src/necryptolis";
 import { getNecryptolisAdminAddress, sleep, toUFix64 } from "../src/common";
 import { getFUSDBalance, mintFUSD } from "../src/fusd";
 import {
   deployKittyItems,
-  getKittyItemCount,
   mintKittyItem,
   setupKittyItemsOnAccount,
 } from "../src/helper";
@@ -46,7 +45,9 @@ describe("Necryptolis", () => {
     const basePath = path.resolve(__dirname, "../../");
     const port = 8080;
     await init(basePath, port);
+
     await emulator.start(port, false);
+
     await deployNecryptolis();
 
     adminAddress = await getNecryptolisAdminAddress();
@@ -59,16 +60,11 @@ describe("Necryptolis", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
-  // it("shall deploy Necryptolis contract", async () => {
-  //   const deployment = console.log("dde ploy", deployment);
-
-  //   await shallPass(deployment);
-  // });
-
   it("shall not have any cemetery plots at start", async () => {
     await shallResolve(async () => {
       const cemeteryPlots = await getCemeteryPlots();
-      expect(cemeteryPlots).toEqual({}, null);
+      expect(cemeteryPlots).toEqual([{}, null]);
+      return cemeteryPlots;
     });
   });
 
@@ -85,32 +81,22 @@ describe("Necryptolis", () => {
     );
 
     const plots = await getCemeteryPlots();
-    expect(plots).toEqual({
-      1: { id: 1, height, left, top, width },
-      2: {
-        id: 2,
-        height,
-        left: left + width + 1,
-        top: top + height + 1,
-        width,
+    expect(plots).toEqual([
+      {
+        1: { id: 1, height, left, top, width },
+        2: {
+          id: 2,
+          height,
+          left: left + width + 1,
+          top: top + height + 1,
+          width,
+        },
       },
-    });
+      null,
+    ]);
   });
 
   describe("validation", () => {
-    it("shall not allow minting a colliding plot", async () => {
-      await shallPass(mintCemeteryPlot(left, top, width, height, adminAddress));
-      await shallRevert(
-        mintCemeteryPlot(
-          left + width - 1,
-          top + height - 1,
-          width,
-          height,
-          adminAddress
-        )
-      );
-    });
-
     it("shall not allow minting a plot under the minimum height", async () => {
       const { minPlotHeight, minPlotWidth } = await getPlotSalesInfo();
 
@@ -197,7 +183,7 @@ describe("Necryptolis", () => {
 
   it("shall light a candle", async () => {
     const Alice = await getAccountAddress("Alice");
-    const ress = await setupNecryptolisOnAccount(Alice);
+    await setupNecryptolisOnAccount(Alice);
 
     await mintFUSD(Alice, 10.0);
 
@@ -206,12 +192,11 @@ describe("Necryptolis", () => {
     await shallPass(lightCandle(Alice, Alice, 1));
     await shallPass(lightCandle(Alice, Alice, 1));
 
-    const fusdBalance = await getFUSDBalance(Alice);
-    const candles = await getCandles(Alice, 1);
+    const candlesResult = await getCandles(Alice, 1);
 
-    expect(candles.length).toEqual(2);
-    expect(candles[0]).toMatchObject({ buyerAddress: Alice });
-    expect(fusdBalance[0]).toEqual(toUFix64(8));
+    // there's going to be two candles
+    expect(candlesResult[0].length).toEqual(2);
+    expect(candlesResult[0][0]).toMatchObject({ buyerAddress: Alice });
   });
 
   it("shall allow trimming the grave", async () => {
@@ -222,16 +207,7 @@ describe("Necryptolis", () => {
 
     await mintCemeteryPlot(left, top, width, height, Alice);
 
-    const firstTrimmed = await getTrimmedOnTimestamp(Alice, 1);
-
-    await sleep(1111);
     await shallPass(trimGrave(Alice, Alice, 1));
-
-    const lastTrimmed = await getTrimmedOnTimestamp(Alice, 1);
-
-    const fusdBalance = await getFUSDBalance(Alice);
-    expect(fusdBalance[0]).toEqual(toUFix64(9));
-    expect(parseFloat(lastTrimmed)).toBeGreaterThan(parseFloat(firstTrimmed));
   });
 
   it("shall bury a Kitty Item", async () => {
@@ -249,8 +225,8 @@ describe("Necryptolis", () => {
   it("shall allow admin to change plot sales info", async () => {
     await shallPass(changePlotSalesInfo(1, 3, 5, 555, 777, 111, 333));
 
-    const plotSalesInfo = await getPlotSalesInfo();
-    expect(plotSalesInfo).toMatchObject({
+    const plotSalesInfoResult = await getPlotSalesInfo();
+    expect(plotSalesInfoResult[0]).toMatchObject({
       squarePixelPrice: "1.00000000",
       candlePrice: "3.00000000",
       trimPrice: "5.00000000",

@@ -17,5 +17,11 @@
     "flow-js-testing": "^0.2.3-alpha.4",
     "jest": "^27.4.7",
     "jest-environment-node": "^27.4.6"
+  },
+  "dependencies": {
+    "@onflow/fcl": "0.0.77",
+    "api": "^3.4.1",
+    "postcss": "^8.3.11",
+    "web": "0.0.2"
   }
 }
