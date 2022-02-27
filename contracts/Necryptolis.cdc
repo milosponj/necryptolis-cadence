@@ -46,6 +46,7 @@ pub contract Necryptolis: NonFungibleToken {
 
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
+    pub let ResolverCollectionPublicPath : PublicPath
     pub let NecryptolisAdminStoragePath: StoragePath
     pub let PlotMinterStoragePath: StoragePath
     pub let GravestoneManagerStoragePath: StoragePath
@@ -170,7 +171,7 @@ pub contract Necryptolis: NonFungibleToken {
         // initializer
         init() {
             Necryptolis.totalSupply = Necryptolis.totalSupply + (1 as UInt64)
-            self.id = Necryptolis.totalSupply
+            self.id = Necryptolis.totalSupply 
             self.plotData = Necryptolis.plotDatas[self.id]!
             self.graveData = GraveData(name: "", fromDate: "", toDate: "", metadata: {})
             self.isGraveSet = false
@@ -598,7 +599,7 @@ pub contract Necryptolis: NonFungibleToken {
 
     // A resource which a user who wishes to add gravestones or 
     // bury other NFTs into his Necryptolis NFT holds
-    // 
+    //
     pub resource GravestoneManager : GravestoneCreator, BurialProvider {
         // createGravestone creates a gravestone on cemetery plot
         // Parameters: 
@@ -666,6 +667,7 @@ pub contract Necryptolis: NonFungibleToken {
       //Initialize storage paths
       self.CollectionStoragePath = /storage/NecryptolisCollection
       self.CollectionPublicPath = /public/NecryptolisCollection
+      self.ResolverCollectionPublicPath = /public/NecryptolisResolverCollection
       self.NecryptolisAdminStoragePath = /storage/NecryptolisAdmin
       self.GravestoneManagerStoragePath = /storage/GravestoneManager
       self.PlotMinterStoragePath = /storage/NecryptolisPlotMinter
@@ -675,6 +677,6 @@ pub contract Necryptolis: NonFungibleToken {
       // Collection
       self.account.save<@Collection>(<- create Collection(), to: self.CollectionStoragePath)
       self.account.link<&{NecryptolisCollectionPublic}>(self.CollectionPublicPath, target: self.CollectionStoragePath)
-
+      self.account.link<&{MetadataViews.ResolverCollection}>(self.ResolverCollectionPublicPath, target: self.CollectionStoragePath)  
   }
 }
