@@ -1,6 +1,6 @@
-import FungibleToken from 0x01
-import NonFungibleToken from 0x02
-import MetadataViews from 0x05
+import FungibleToken from "./FungibleToken.cdc"
+import NonFungibleToken from "./NonFungibleToken.cdc"
+import MetadataViews from "./MetadataViews.cdc"
 
 pub contract Necryptolis: NonFungibleToken {
 
