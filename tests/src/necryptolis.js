@@ -159,6 +159,17 @@ export const changePlotSalesInfo = async (
   return sendTransaction({ name, args, signers });
 };
 
+export const changeImagesBaseUrl = async (newName) => {
+  const name = "admin/change_images_base_url";
+
+  const args = [newName];
+
+  const necryptolisAdmin = await getNecryptolisAdminAddress();
+  const signers = [necryptolisAdmin];
+
+  return sendTransaction({ name, args, signers });
+};
+
 // SCRIPTS
 
 export const getCemeteryPlots = async () => {
@@ -169,6 +180,12 @@ export const getCemeteryPlots = async () => {
 
 export const getPlotSalesInfo = async () => {
   const name = "get_plot_sales_info";
+
+  return executeScript({ name });
+};
+
+export const getImagesBaseURL = async () => {
+  const name = "get_images_base_url";
 
   return executeScript({ name });
 };

@@ -20,10 +20,11 @@ import {
   setupNecryptolisOnAccount,
   buryKittyItem,
   changePlotSalesInfo,
-  getPlotMetadata,
+  changeImagesBaseUrl,
+  getImagesBaseURL,
 } from "../src/necryptolis";
 import { getNecryptolisAdminAddress, sleep, toUFix64 } from "../src/common";
-import { getFUSDBalance, mintFUSD } from "../src/fusd";
+import { mintFUSD } from "../src/fusd";
 import {
   deployKittyItems,
   mintKittyItem,
@@ -235,5 +236,12 @@ describe("Necryptolis", () => {
       minPlotHeight: 111,
       minPlotWidth: 333,
     });
+  });
+
+  it("shall allow admin to change images base url", async () => {
+    await shallPass(changeImagesBaseUrl("test base url"));
+
+    const changeImagesBaseUrlResult = await getImagesBaseURL();
+    expect(changeImagesBaseUrlResult[0]).toEqual("test base url");
   });
 });
