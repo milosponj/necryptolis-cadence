@@ -35,8 +35,8 @@ import {
 jest.setTimeout(10000);
 
 describe("Necryptolis", () => {
-  const left = 0;
-  const top = 0;
+  const left = -150;
+  const top = -150;
   const height = 300;
   const width = 300;
   let adminAddress = "";
@@ -84,13 +84,17 @@ describe("Necryptolis", () => {
     const plots = await getCemeteryPlots();
     expect(plots).toEqual([
       {
-        1: { id: 1, height, left, top, width },
-        2: {
-          id: 2,
-          height,
-          left: left + width + 1,
-          top: top + height + 1,
-          width,
+        0: {
+          0: {
+            1: { id: 1, height, left, top, width },
+            2: {
+              id: 2,
+              height,
+              left: left + width + 1,
+              top: top + height + 1,
+              width,
+            },
+          },
         },
       },
       null,
@@ -98,6 +102,34 @@ describe("Necryptolis", () => {
   });
 
   describe("validation", () => {
+    it("shall not allow minting a colliding plot", async () => {
+      await shallPass(mintCemeteryPlot(left, top, width, height, adminAddress));
+      await shallRevert(
+        mintCemeteryPlot(left + width - 2, top, width, height, adminAddress)
+      );
+      await shallRevert(
+        mintCemeteryPlot(left, top + height - 2, width, height, adminAddress)
+      );
+      await shallRevert(
+        mintCemeteryPlot(
+          left + width - 2,
+          top + height - 2,
+          width,
+          height,
+          adminAddress
+        )
+      );
+      await shallRevert(
+        mintCemeteryPlot(
+          left - width,
+          top - height,
+          width + 2,
+          height + 2,
+          adminAddress
+        )
+      );
+    });
+
     it("shall not allow minting a plot under the minimum height", async () => {
       const { minPlotHeight, minPlotWidth } = await getPlotSalesInfo();
 

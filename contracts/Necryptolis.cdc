@@ -1,6 +1,6 @@
-import FungibleToken from "./FungibleToken.cdc"
-import NonFungibleToken from "./NonFungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import FungibleToken from 0x01
+import NonFungibleToken from 0x02
+import MetadataViews from 0x05
 
 pub contract Necryptolis: NonFungibleToken {
 
@@ -52,7 +52,9 @@ pub contract Necryptolis: NonFungibleToken {
     pub let GravestoneManagerStoragePath: StoragePath
 
     // information about all the plots in Necryptolis (their position and dimension)
-    pub let plotDatas: {UInt64: PlotData}    
+    // necryptolis is divided into 1000x1000 sections
+    // {xSection : {ySection : { nftId: PlotData }}}
+    pub let plotDatas: {Int32: {Int32 : {UInt64: PlotData}}}     
 
     pub let plotSalesInfo : PlotSalesInfo
     
@@ -81,6 +83,12 @@ pub contract Necryptolis: NonFungibleToken {
             }
     }
 
+    // We split Necryptolis surface into square blocks of 1000 pixels
+    // this helper function returns a section for a given x or y coordinate
+    pub fun getSection(position: Int32) : Int32 {
+        return position / 1000;
+    }
+
     // further away the cemetery plot is created the price drops
     // this helper method returns the factor by which the price needs to be reduced
     pub fun getPlotDistanceFactor(left: Int32, top: Int32) : UFix64 {
@@ -99,6 +107,59 @@ pub contract Necryptolis: NonFungibleToken {
         }
                 
         return 1.0 / UFix64(biggerValue / 1000 + 1)
+    }
+
+    access(contract) fun isPlotCollidingInSection(xSection: Int32, ySection: Int32, left: Int32, top: Int32, width: UInt16, height: UInt16) : Bool {
+        if(Necryptolis.plotDatas[xSection] == nil){        
+            return false
+        }
+        let plotDatasYSection = Necryptolis.plotDatas[xSection]!
+        
+        if(plotDatasYSection[ySection] == nil){
+            return false
+        }
+
+        let plotsInSection = plotDatasYSection[ySection]!
+
+        for key in plotsInSection.keys {
+            let plotData = plotsInSection[key]!
+            if (
+                plotData.left <= left + Int32(width) &&
+                plotData.left + Int32(plotData.width) > left + 1 &&
+                plotData.top < top + Int32(height) &&
+                plotData.top + Int32(plotData.height) > top + 1
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    pub fun isPlotColliding(xSection: Int32, ySection: Int32, left: Int32, top: Int32, width: UInt16, height: UInt16) : Bool {
+        if(Necryptolis.isPlotCollidingInSection(xSection: xSection, ySection: ySection, left: left, top: top, width: width, height: height)){
+            return true
+        }
+        if((left % 1000) + Int32(width) > 1000 && Necryptolis.isPlotCollidingInSection(xSection: xSection + 1, ySection: ySection, left: left, top: top, width: width, height: height)){
+            return true
+        }
+        if((top % 1000) + Int32(height) > 1000 && Necryptolis.isPlotCollidingInSection(xSection: xSection, ySection: ySection + 1, left: left, top: top, width: width, height: height)){
+            return true
+        }
+        if((left % 1000) + Int32(width) > 1000 && (top % 1000) + Int32(height) > 1000 && Necryptolis.isPlotCollidingInSection(xSection: xSection + 1, ySection: ySection + 1, left: left, top: top, width: width, height: height)){
+            return true
+        }
+        if(Necryptolis.isPlotCollidingInSection(xSection: xSection - 1, ySection: ySection, left: left, top: top, width: width, height: height)){
+            return true
+        }
+        if(Necryptolis.isPlotCollidingInSection(xSection: xSection, ySection: ySection - 1, left: left, top: top, width: width, height: height)){
+            return true
+        }
+        if(Necryptolis.isPlotCollidingInSection(xSection: xSection - 1, ySection: ySection - 1, left: left, top: top, width: width, height: height)){
+            return true
+        }
+        
+        return false
     }
 
     // returns the price of the plot
@@ -169,10 +230,10 @@ pub contract Necryptolis: NonFungibleToken {
         pub var lastTrimTimestamp: UFix64
 
         // initializer
-        init() {
-            Necryptolis.totalSupply = Necryptolis.totalSupply + (1 as UInt64)
+        init(xSection: Int32, ySection: Int32) {
+            Necryptolis.totalSupply = Necryptolis.totalSupply + 1
             self.id = Necryptolis.totalSupply 
-            self.plotData = Necryptolis.plotDatas[self.id]!
+            self.plotData = Necryptolis.plotDatas[xSection]![ySection]![self.id]!
             self.graveData = GraveData(name: "", fromDate: "", toDate: "", metadata: {})
             self.isGraveSet = false
             self.candles = []
@@ -340,6 +401,7 @@ pub contract Necryptolis: NonFungibleToken {
         // buyerPayment: payment vault of the buyer
         pub fun mintCemeteryPlot(left: Int32, top: Int32, width: UInt16, height: UInt16, buyerPayment: @FungibleToken.Vault): @NFT {   
             pre {
+                !Necryptolis.isPlotColliding(xSection: Necryptolis.getSection(position: left), ySection: Necryptolis.getSection(position: top),left: left, top: top, width: width, height: height) : "New plot is colliding with the old."                                
                 buyerPayment.balance == Necryptolis.getPlotPrice(width: width, height: height, left: left, top: top) : "Payment does not equal the price of the plot."
                 width <= Necryptolis.plotSalesInfo.maxPlotWidth : "Plot too wide."
                 width >= Necryptolis.plotSalesInfo.minPlotWidth : "Plot not wide enough."
@@ -347,13 +409,27 @@ pub contract Necryptolis: NonFungibleToken {
                 height >= Necryptolis.plotSalesInfo.minPlotHeight : "Plot not high enough."
             }
                 
-            var newPlotData = PlotData(left: left, top: top, width: width, height: height)            
-            Necryptolis.plotDatas[newPlotData.id] = newPlotData
-
+            var newPlotData = PlotData(left: left, top: top, width: width, height: height)
+            let xSection = Necryptolis.getSection(position: left)         
+            let ySection = Necryptolis.getSection(position: top)
+            if(Necryptolis.plotDatas[xSection] == nil){        
+                Necryptolis.plotDatas[xSection] = {}
+            }
+            let plotDatasYSection = Necryptolis.plotDatas[xSection]!
+            
+            if(plotDatasYSection[ySection] == nil){
+                plotDatasYSection[ySection] = {}
+            }
+            
+            let plotsInSection = plotDatasYSection[ySection]!
+            plotsInSection[newPlotData.id] = newPlotData
+            plotDatasYSection[ySection] = plotsInSection
+            Necryptolis.plotDatas[xSection] = plotDatasYSection
+            
             Necryptolis.plotSalesInfo.servicesProviderVault!.borrow()!.deposit(from: <- buyerPayment)
             
             //Mint
-            let newCemeteryPlot: @NFT <- create NFT()
+            let newCemeteryPlot: @NFT <- create NFT(xSection: xSection, ySection: ySection)
 
             return <- newCemeteryPlot
         }
@@ -421,12 +497,29 @@ pub contract Necryptolis: NonFungibleToken {
         // top: distance from the center to the top
         // width: The width of the plot
         // height: The height of the plot
-        pub fun mintCemeteryPlot(left: Int32, top: Int32, width: UInt16, height: UInt16): @NFT {           
-            var newPlotData = PlotData(left: left, top: top, width: width, height: height)            
-            Necryptolis.plotDatas[newPlotData.id] = newPlotData
+        pub fun mintCemeteryPlot(left: Int32, top: Int32, width: UInt16, height: UInt16): @NFT {  
+            pre {
+                !Necryptolis.isPlotColliding(xSection: Necryptolis.getSection(position: left), ySection: Necryptolis.getSection(position: top),left: left, top: top, width: width, height: height) : "New plot is colliding with the old."                               
+            }         
+            var newPlotData = PlotData(left: left, top: top, width: width, height: height)  
+            let xSection = Necryptolis.getSection(position: left)         
+            let ySection = Necryptolis.getSection(position: top)
+            if(Necryptolis.plotDatas[xSection] == nil){        
+                Necryptolis.plotDatas[xSection] = {}
+            }
+            let plotDatasYSection = Necryptolis.plotDatas[xSection]!
+            
+            if(plotDatasYSection[ySection] == nil){
+                plotDatasYSection[ySection] = {}
+            }
+            
+            let plotsInSection = plotDatasYSection[ySection]!
+            plotsInSection[newPlotData.id] = newPlotData
+            plotDatasYSection[ySection] = plotsInSection
+            Necryptolis.plotDatas[xSection] = plotDatasYSection 
             
             //Mint
-            let newCemeteryPlot: @NFT <- create NFT()
+            let newCemeteryPlot: @NFT <- create NFT(xSection: xSection, ySection: ySection)
 
             return <- newCemeteryPlot
         }
