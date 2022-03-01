@@ -17,5 +17,4 @@ Testnet contract is deployed to: https://flow-view-source.com/testnet/account/0x
 
 ### Additional info
 
-- Tests are failing only in CI, but work locally.
 - Application is deployed to Azure
