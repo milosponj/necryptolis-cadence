@@ -1,8 +1,8 @@
-import FungibleToken from 0x01
-import NonFungibleToken from 0x02
-import FUSD from 0x05
-import Necryptolis from 0x03
-import NFTStorefront from 0x04
+import FungibleToken from "../../contracts/FungibleToken.cdc"
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
+import FUSD from "../../contracts/FUSD.cdc"
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+import NFTStorefront from "../../contracts/NFTStorefront.cdc"
 
 transaction(saleItemID: UInt64, saleItemPrice: UFix64) {
 

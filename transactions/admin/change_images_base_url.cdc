@@ -1,4 +1,4 @@
-import Necryptolis from 0x03
+import Necryptolis from "../../contracts/Necryptolis.cdc"
 
 transaction(newURL: String) {     
     let adminRef: &Necryptolis.Admin?

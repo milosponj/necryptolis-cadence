@@ -1,5 +1,5 @@
-import Necryptolis from 0x03
-import FUSD from 0x05
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+import FUSD from "../../contracts/FUSD.cdc"
 
 transaction(left: Int32, top: Int32, width: UInt16, height: UInt16, recipientAddr: Address) {
   let plotMinterRef: &Necryptolis.PlotMinter?

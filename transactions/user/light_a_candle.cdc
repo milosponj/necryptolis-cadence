@@ -1,6 +1,6 @@
-import Necryptolis from 0x03
-import FUSD from 0x05
-import NonFungibleToken from 0x02
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+import FUSD from "../../contracts/FUSD.cdc"
 
 transaction(address: Address, cemeteryPlotId: UInt64) {
   let mainFusdVault: &FUSD.Vault?

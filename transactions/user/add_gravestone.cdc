@@ -1,4 +1,4 @@
-import Necryptolis from 0x03
+import Necryptolis from "../../contracts/Necryptolis.cdc"
 
 transaction(plotId: UInt64, name: String, fromDate: String, toDate: String, metadata: {String:String} ) {    
     let necryptolisProvider: Capability<&Necryptolis.Collection{Necryptolis.NecryptolisCollectionPublic}>

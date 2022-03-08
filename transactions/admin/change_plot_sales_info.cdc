@@ -1,6 +1,6 @@
-import FungibleToken from 0x01
-import Necryptolis from 0x03
-import FUSD from 0x05
+import FungibleToken from "../../contracts/FungibleToken.cdc"
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+import FUSD from "../../contracts/FUSD.cdc"
 
 transaction(squarePixelPrice: UFix64, candlePrice: UFix64, trimPrice: UFix64, maxPlotHeight: UInt16, maxPlotWidth: UInt16, minPlotHeight: UInt16, minPlotWidth: UInt16) {     
     let adminRef: &Necryptolis.Admin

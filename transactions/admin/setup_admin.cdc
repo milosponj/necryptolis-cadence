@@ -1,4 +1,5 @@
-import Necryptolis from 0x03
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+
 
 // this transaction adds a Necryptolis admin resource to a second provided account
 transaction {

@@ -1,4 +1,4 @@
-import Necryptolis from 0x03
+import Necryptolis from "../../contracts/Necryptolis.cdc"
 
 transaction(left: Int32, top: Int32, width: UInt16, height: UInt16, recipientAddr: Address) {
   let adminRef: &Necryptolis.Admin?
