@@ -1,4 +1,5 @@
-import NonFungibleToken from "./NonFungibleToken.cdc"
+import NonFungibleToken from 0x1d7e57aa55817448
+
 
 // KittyItems
 // NFT items for Kitties!
