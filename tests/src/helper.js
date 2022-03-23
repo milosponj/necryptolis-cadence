@@ -17,8 +17,27 @@ export const deployKittyItems = async (address) => {
   });
 };
 
+export const deployFlovatar = async (address) => {
+  await mintFlow(address, "10.0");
+  const admin = await getNecryptolisAdminAddress();
+
+  const addressMap = { NonFungibleToken: admin };
+  return deployContractByName({
+    to: address,
+    name: "Flovatar",
+    addressMap,
+  });
+};
+
+export const setupFlovatarOnAccount = async (account) => {
+  const name = "otherFlowPlatforms/setup_flovatar_account";
+  const signers = [account];
+
+  return sendTransaction({ name, signers });
+};
+
 export const setupKittyItemsOnAccount = async (account) => {
-  const name = "kittyItems/setup_account";
+  const name = "otherFlowPlatforms/setup_kitty_items_account";
   const signers = [account];
 
   return sendTransaction({ name, signers });
@@ -37,7 +56,7 @@ export const mintKittyItem = async (
   itemType,
   itemRarity
 ) => {
-  const name = "kittyItems/mint_kitty_item";
+  const name = "otherFlowPlatforms/mint_kitty_item";
   const args = [recipient, itemType, itemRarity];
   const signers = [kittyAdmin];
 

@@ -1,0 +1,13 @@
+{
+  "accounts": {
+    "testnet-account": {
+      "address": "0x720bbc077f5b0bda",
+      "keys": "f73c44219f9513ea8ca186ed75b528770c438423fceacf68d403bb09dfd22a2d"
+    }
+  },
+  "deployments": {
+    "testnet": {
+      "testnet-account": ["Necryptolis"]
+    }
+  }
+}

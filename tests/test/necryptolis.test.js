@@ -27,6 +27,7 @@ import { getNecryptolisAdminAddress, sleep, toUFix64 } from "../src/common";
 import { mintFUSD } from "../src/fusd";
 import {
   deployKittyItems,
+  deployFlovatar,
   mintKittyItem,
   setupKittyItemsOnAccount,
 } from "../src/helper";
@@ -249,6 +250,18 @@ describe("Necryptolis", () => {
     await mintCemeteryPlot(left, top, width, height, Alice);
 
     await deployKittyItems(Alice);
+    await setupKittyItemsOnAccount(Alice);
+    await mintKittyItem(Alice, Alice, 1, 1);
+
+    await shallPass(buryKittyItem(Alice, 1, 0));
+  });
+
+  it.only("shall bury a flovatar NFT", async () => {
+    const Alice = await getAccountAddress("Alice");
+    await setupNecryptolisOnAccount(Alice);
+    await mintCemeteryPlot(left, top, width, height, Alice);
+
+    await deployFlovatar(Alice);
     await setupKittyItemsOnAccount(Alice);
     await mintKittyItem(Alice, Alice, 1, 1);
 
