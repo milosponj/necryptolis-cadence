@@ -1,5 +1,5 @@
-import NonFungibleToken from 0x02
-import Necryptolis from 0x03
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
+import Necryptolis from "../../contracts/Necryptolis.cdc"
 
 pub fun main(address: Address, cemeteryPlotId: UInt64): [Necryptolis.CandleBuy] {
     let account = getAccount(address)

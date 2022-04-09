@@ -1,4 +1,5 @@
-import Necryptolis from 0x03
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+
 
 pub fun main(): Necryptolis.PlotSalesInfo {    
     return Necryptolis.plotSalesInfo

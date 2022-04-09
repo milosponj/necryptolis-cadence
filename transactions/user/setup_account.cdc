@@ -1,7 +1,7 @@
-import FungibleToken from 0x01
-import NonFungibleToken from 0x02
-import FUSD from 0x05
-import Necryptolis from 0x03
+import FungibleToken from "../../contracts/FungibleToken.cdc"
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+import FUSD from "../../contracts/FUSD.cdc"
 
   pub fun hasFUSD(_ address: Address): Bool {
     let receiver = getAccount(address)

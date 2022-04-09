@@ -1,6 +1,6 @@
-import NonFungibleToken from 0x02
-import Necryptolis from 0x03
-import KittyItems from 0x04
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+import KittyItems from "../../contracts/KittyItems.cdc"
 
 transaction(plotId: UInt64, basicNFTId: UInt64) {    
     let necryptolisProvider: Capability<&Necryptolis.Collection{Necryptolis.NecryptolisCollectionPublic}>

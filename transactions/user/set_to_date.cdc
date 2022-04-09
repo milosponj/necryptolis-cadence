@@ -1,4 +1,5 @@
-import Necryptolis from 0x03
+import Necryptolis from "../../contracts/Necryptolis.cdc"
+
 
 transaction(plotId: UInt64, toDate: String) {    
     let necryptolisCollection: &Necryptolis.Collection

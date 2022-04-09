@@ -131,6 +131,13 @@ describe("Necryptolis", () => {
       );
     });
 
+    it("shall not allow minting a colliding plot in a different section", async () => {
+      await shallPass(mintCemeteryPlot(-7001, -937, width, height, adminAddress));
+      await shallRevert(
+        mintCemeteryPlot(-7001, -1000, width, height, adminAddress)
+      );
+    });
+
     it("shall not allow minting a plot under the minimum height", async () => {
       const { minPlotHeight, minPlotWidth } = await getPlotSalesInfo();
 

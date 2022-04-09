@@ -1,5 +1,6 @@
-import NonFungibleToken from 0x02
-import NFTStorefront from 0x04
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
+import NFTStorefront from "../../contracts/NFTStorefront.cdc"
+
 
 pub fun main(address: Address): [UInt64] {
     let account = getAccount(address)
