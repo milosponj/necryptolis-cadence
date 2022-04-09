@@ -130,7 +130,7 @@ describe("Necryptolis", () => {
       );
     });
 
-    it.only("shall not allow minting a colliding plot in a different section", async () => {
+    it("shall not allow minting a colliding plot in a different section", async () => {
       await shallPass(mintCemeteryPlot(-7001, -937, width, height, adminAddress));
       await shallRevert(
         mintCemeteryPlot(-7001, -1000, width, height, adminAddress)
