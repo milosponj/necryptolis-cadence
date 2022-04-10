@@ -159,6 +159,12 @@ pub contract Necryptolis: NonFungibleToken {
         if(Necryptolis.isPlotCollidingInSection(xSection: xSection - 1, ySection: ySection - 1, left: left, top: top, width: width, height: height)){
             return true
         }
+        if(Necryptolis.isPlotCollidingInSection(xSection: xSection - 1, ySection: ySection + 1, left: left, top: top, width: width, height: height)){
+            return true
+        }
+        if(Necryptolis.isPlotCollidingInSection(xSection: xSection + 1, ySection: ySection - 1, left: left, top: top, width: width, height: height)){
+            return true
+        }
         
         return false
     }
