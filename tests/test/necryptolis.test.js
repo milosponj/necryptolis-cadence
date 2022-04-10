@@ -132,9 +132,15 @@ describe("Necryptolis", () => {
 
     it("shall not allow minting a colliding plot in a different section", async () => {
       await shallPass(mintCemeteryPlot(-7001, -937, width, height, adminAddress));
-      await shallRevert(
+      const [txResult1, error1] = await shallRevert(
         mintCemeteryPlot(-7001, -1000, width, height, adminAddress)
       );
+      expect(error1).toContain("pre-condition failed: New plot is colliding with the old")
+
+      const [txResult2, error2] = await shallRevert(
+        mintCemeteryPlot(-6800, -1000, width, height, adminAddress)
+      );
+      expect(error2).toContain("pre-condition failed: New plot is colliding with the old")
     });
 
     it("shall not allow minting a plot under the minimum height", async () => {
