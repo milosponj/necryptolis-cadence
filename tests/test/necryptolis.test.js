@@ -132,16 +132,22 @@ describe("Necryptolis", () => {
     });
 
     it("shall not allow minting a colliding plot in a different section", async () => {
-      await shallPass(mintCemeteryPlot(-7001, -937, width, height, adminAddress));
+      await shallPass(
+        mintCemeteryPlot(-7001, -937, width, height, adminAddress)
+      );
       const [txResult1, error1] = await shallRevert(
         mintCemeteryPlot(-7001, -1000, width, height, adminAddress)
       );
-      expect(error1).toContain("pre-condition failed: New plot is colliding with the old")
+      expect(error1).toContain(
+        "pre-condition failed: New plot is colliding with the old"
+      );
 
       const [txResult2, error2] = await shallRevert(
         mintCemeteryPlot(-6800, -1000, width, height, adminAddress)
       );
-      expect(error2).toContain("pre-condition failed: New plot is colliding with the old")
+      expect(error2).toContain(
+        "pre-condition failed: New plot is colliding with the old"
+      );
     });
 
     it("shall not allow minting a plot under the minimum height", async () => {
@@ -257,29 +263,29 @@ describe("Necryptolis", () => {
     await shallPass(trimGrave(Alice, Alice, 1));
   });
 
-  it("shall bury a Kitty Item", async () => {
-    const Alice = await getAccountAddress("Alice");
-    await setupNecryptolisOnAccount(Alice);
-    await mintCemeteryPlot(left, top, width, height, Alice);
+  // it("shall bury a Kitty Item", async () => {
+  //   const Alice = await getAccountAddress("Alice");
+  //   await setupNecryptolisOnAccount(Alice);
+  //   await mintCemeteryPlot(left, top, width, height, Alice);
 
-    await deployKittyItems(Alice);
-    await setupKittyItemsOnAccount(Alice);
-    await mintKittyItem(Alice, Alice, 1, 1);
+  //   await deployKittyItems(Alice);
+  //   await setupKittyItemsOnAccount(Alice);
+  //   await mintKittyItem(Alice, Alice, 1, 1);
 
-    await shallPass(buryKittyItem(Alice, 1, 0));
-  });
+  //   await shallPass(buryKittyItem(Alice, 1, 0));
+  // });
 
-  it.only("shall bury a flovatar NFT", async () => {
-    const Alice = await getAccountAddress("Alice");
-    await setupNecryptolisOnAccount(Alice);
-    await mintCemeteryPlot(left, top, width, height, Alice);
+  // it("shall bury a flovatar NFT", async () => {
+  //   const Alice = await getAccountAddress("Alice");
+  //   await setupNecryptolisOnAccount(Alice);
+  //   await mintCemeteryPlot(left, top, width, height, Alice);
 
-    await deployFlovatar(Alice);
-    await setupKittyItemsOnAccount(Alice);
-    await mintKittyItem(Alice, Alice, 1, 1);
+  //   await deployFlovatar(Alice);
+  //   await setupKittyItemsOnAccount(Alice);
+  //   await mintKittyItem(Alice, Alice, 1, 1);
 
-    await shallPass(buryKittyItem(Alice, 1, 0));
-  });
+  //   await shallPass(buryKittyItem(Alice, 1, 0));
+  // });
 
   it("shall allow admin to change plot sales info", async () => {
     await shallPass(changePlotSalesInfo(1, 3, 5, 555, 777, 111, 333));

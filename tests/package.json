@@ -19,7 +19,7 @@
     "jest-environment-node": "^27.4.6"
   },
   "dependencies": {
-    "@onflow/fcl": "0.0.77",
+    "@onflow/fcl": "^1.0.0",
     "api": "^3.4.1",
     "postcss": "^8.3.11",
     "web": "0.0.2"
