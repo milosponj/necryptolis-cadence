@@ -557,6 +557,7 @@ pub contract Necryptolis: NonFungibleToken {
     // but also to light a candle and trim them
     pub resource interface NecryptolisCollectionPublic {        
         pub fun deposit(token: @NonFungibleToken.NFT)
+        pub fun batchDeposit(tokens: @NonFungibleToken.Collection)
         pub fun getIDs(): [UInt64]        
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
         pub fun borrowCemeteryPlot(id: UInt64): &Necryptolis.NFT? {
@@ -602,6 +603,42 @@ pub contract Necryptolis: NonFungibleToken {
             emit DepositNecryptolisNFT(id: id, to: self.owner?.address, left: left, top: top)
 
             destroy oldToken
+        }
+
+        // batchWithdraw withdraws multiple tokens and returns them as a Collection
+        //
+        // Parameters: ids: An array of IDs to withdraw
+        //
+        // Returns: @NonFungibleToken.Collection: A collection that contains
+        //                                        the withdrawn combos
+        //
+        pub fun batchWithdraw(ids: [UInt64]): @NonFungibleToken.Collection {
+            // Create a new empty Collection
+            var batchCollection <- create Collection()
+            
+            // Iterate through the ids and withdraw them from the Collection
+            for id in ids {
+                batchCollection.deposit(token: <-self.withdraw(withdrawID: id))
+            }
+            
+            // Return the withdrawn tokens
+            return <-batchCollection
+        }
+
+        // batchDeposit takes a Collection object as an argument
+        // and deposits each contained NFT into this Collection
+        pub fun batchDeposit(tokens: @NonFungibleToken.Collection) {
+
+            // Get an array of the IDs to be deposited
+            let keys = tokens.getIDs()
+
+            // Iterate through the keys in the collection and deposit each one
+            for key in keys {
+                self.deposit(token: <-tokens.withdraw(withdrawID: key))
+            }
+
+            // Destroy the empty Collection
+            destroy tokens
         }
 
         // gets Ids of all the nfts owned by this collection
